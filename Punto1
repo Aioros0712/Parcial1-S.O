@@ -2,10 +2,10 @@ mkdir ~/modulo_parcial
 cd ~/modulo_parcial
 
 
-nano simple.c
+nano simple.c //Crea un archivo nano (editor de texto en la terminal, ya viene instalado en Linux)
 
 
-#include <linux/init.h>       
+#include <linux/init.h>         
 #include <linux/module.h>     
 #include <linux/kernel.h>    
 #include <linux/gcd.h>        
@@ -14,7 +14,7 @@ nano simple.c
 #include <linux/hash.h>      
 
 static int __init simple_init(void) {
-    unsigned long gcd_result = gcd(3300, 24);
+    unsigned long gcd_result = gcd(3300, 24); //Calcula el MCD entre 3300 y 24
 
     printk(KERN_INFO "Loading Kernel Module\n");
     printk(KERN_INFO "GOLDEN_RATIO_PRIME: %lu\n", GOLDEN_RATIO_PRIME);
@@ -37,28 +37,30 @@ MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Simple Module");
 MODULE_AUTHOR("Cristian_Fabian");
 
-//Guardar y salir
+//GUARDAR Y SALIR CTR+O Y LUEGO CTR+X
 
 nano makefile
 
-obj-m += simple.o  
+obj-m += simple.o  //obj-m es objetos del modulo y le dice a make que compile el simple.c como un modulo de kernel .ko
 
 all:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules //Va al directorio de instalación del kernel y compila el módulo de la carpeta actual
 
 clean:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean //elimina archivos temporales de compilación
 
-//Guardar y salir
+//GUARDAR Y SALIR CTR+O Y LUEGO CTR+X 
 
-make
+make //compila
 
-sudo insmod simple.ko
+sudo insmod simple.ko //insmod inserta un móudlo al kernel, en este caso el simple.ko
 
-lsmod | grep simple
+lsmod | grep simple //verifica si el módulo está activo
 
-sudo dmes | tail -20
+sudo dmesg | tail -20 //muestra las últimas 20 líneas de los mensajes del kernel, osea los printk y eso (tail por defecto muestra solo 10 creo)
 
-sudo rmmod simple
+sudo rmmod simple //remueve o descarga el módulo "simple" cargado
 
-sudo dmesg | tail -20
+sudo dmesg | tail -20 //muestra el mensaje de simple_exit porque ya se descargo ese módulo
+
+exit
