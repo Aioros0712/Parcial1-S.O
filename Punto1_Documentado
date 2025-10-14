@@ -5,13 +5,13 @@ cd ~/modulo_parcial
 nano simple.c //Crea un archivo nano (editor de texto en la terminal, ya viene instalado en Linux)
 
 
-#include <linux/init.h>         
-#include <linux/module.h>     
-#include <linux/kernel.h>    
-#include <linux/gcd.h>        
-#include <linux/jiffies.h>    
-#include <linux/param.h>      
-#include <linux/hash.h>      
+#include <linux/init.h>    //El kernel usa la función solo durante la inicialización y luego libera memoria
+#include <linux/module.h>  //Permite Crear modulos en el kernel   
+#include <linux/kernel.h>  //Funciones del kernele como printk() o kern_info o debug o kern_err (error)  
+#include <linux/gcd.h>     //GCD (Greatest Common Divisor) para que el kernel haga cálculos matemáticos  
+#include <linux/jiffies.h> //Jiffies mide la frecuencia de reloj interno, depende de los HZ del sistema  
+#include <linux/param.h>   //Define la constante HZ (# de ticks del timerpor segundo)  
+#include <linux/hash.h>    //Define constantes para funciones hash del kernel
 
 static int __init simple_init(void) {
     unsigned long gcd_result = gcd(3300, 24); //Calcula el MCD entre 3300 y 24
@@ -25,14 +25,14 @@ static int __init simple_init(void) {
 }
 
 static void __exit simple_exit(void) {
-    printk(KERN_INFO "Removing Kernel Module\n");
-    printk(KERN_INFO "Final jiffies value: %lu\n", jiffies);
+    printk(KERN_INFO "Removing Kernel Module\n"); 
+    printk(KERN_INFO "Final jiffies value: %lu\n", jiffies);  
 
 }
 
-module_init(simple_init);
-module_exit(simple_exit);
-
+module_init(simple_init);     //Función de inicialización
+module_exit(simple_exit);     //Función de limpieza
+ 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Simple Module");
 MODULE_AUTHOR("Cristian_Fabian");
