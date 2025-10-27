@@ -1,0 +1,88 @@
+nano quick.cpp
+
+
+#include <iostream>
+#include <vector>
+#include <thread>
+#include <algorithm>
+#include <chrono>
+#include <random>
+
+using namespace std;
+
+// Umbral para ejecutar secuencialmente
+const int total = 10000;
+
+// QuickSort secuencial
+void quicksort(vector<int>& arr, int izq, int der) {
+    if (izq >= der) return;
+    int pivot = arr[(izq + der) / 2];
+    int i = izq, j = der;
+
+    while (i <= j) {
+        while (arr[i] < pivot) i++;
+        while (arr[j] > pivot) j--;
+        if (i <= j) swap(arr[i++], arr[j--]);
+    }
+
+    quicksort(arr, izq, j);
+    quicksort(arr, i, der);
+}
+
+// QuickSort paralelo
+void parallelQuicksort(vector<int>& arr, int izq, int der, int depth = 0) {
+    if (izq >= der) return;
+    if (der - izq < total || depth > 3) { // profundidad máxima
+        quicksort(arr, izq, der);
+        return;
+    }
+
+    int pivot = arr[(izq + der) / 2];
+    int i = izq, j = der;
+    while (i <= j) {
+        while (arr[i] < pivot) i++;
+        while (arr[j] > pivot) j--;
+        if (i <= j) swap(arr[i++], arr[j--]);
+    }
+
+    thread izqThread, derThread;
+    if (izq < j)
+        izqThread = thread(parallelQuicksort, ref(arr), izq, j, depth + 1);
+    if (i < der)
+        derThread = thread(parallelQuicksort, ref(arr), i, der, depth + 1);
+
+    if (izqThread.joinable()) izqThread.join();
+    if (derThread.joinable()) derThread.join();
+}
+
+// Genera arreglo aleatorio
+vector<int> generarArreglo(int n) {
+    vector<int> arr(n);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(1, n);
+    for (int i = 0; i < n; i++) arr[i] = dis(gen);
+    return arr;
+}
+
+int main() {
+    vector<int> tamaños = {10000, 50000, 100000, 200000};
+
+    for (int n : tamaños) {
+        vector<int> arr = generarArreglo(n);
+
+        auto inicio = chrono::high_resolution_clock::now();
+        parallelQuicksort(arr, 0, arr.size() - 1);
+        auto fin = chrono::high_resolution_clock::now();
+
+        chrono::duration<double> duracion = fin - inicio;
+        cout << "Tamaño: " << n
+             << " elementos | Tiempo de ejecución: " << duracion.count() << " segundos\n";
+    }
+
+    return 0;
+}
+
+g++ quick.cpp -o quick
+
+./quick
