@@ -1,0 +1,87 @@
+nano merge.cpp
+
+
+#include <iostream>
+#include <vector>
+#include <thread>
+#include <algorithm>
+#include <chrono>
+#include <random>
+
+using namespace std;
+
+const int total = 10000;
+
+void merge(vector<int>& arr, int izq, int mit, int der) {
+    vector<int> temp(der - izq + 1);
+    int i = izq, j = mit + 1, k = 0;
+
+    while (i <= mit && j <= der) {
+        if (arr[i] < arr[j])
+            temp[k++] = arr[i++];
+        else
+            temp[k++] = arr[j++];
+    }
+    while (i <= mit) temp[k++] = arr[i++];
+    while (j <= der) temp[k++] = arr[j++];
+
+    for (int t = 0; t < k; t++)
+        arr[izq + t] = temp[t];
+}
+
+void mergesort(vector<int>& arr, int izq, int der) {
+    if (izq >= der) return;
+    int mit = (izq + der) / 2;
+    mergesort(arr, izq, mit);
+    mergesort(arr, mit + 1, der);
+    merge(arr, izq, mit, der);
+}
+
+void parallelMergesort(vector<int>& arr, int izq, int der, int depth = 0) {
+    if (izq >= der) return;
+    if (der - izq < total || depth > 3) {
+        mergesort(arr, izq, der);
+        return;
+    }
+
+    int mit = (izq + der) / 2;
+    thread izqThread(parallelMergesort, ref(arr), izq, mit, depth + 1);
+    thread derThread(parallelMergesort, ref(arr), mit + 1, der, depth + 1);
+
+    izqThread.join();
+    derThread.join();
+
+    merge(arr, izq, mit, der);
+}
+
+vector<int> generarArreglo(int n) {
+    vector<int> arr(n);
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(1, n);
+    for (int i = 0; i < n; i++) arr[i] = dis(gen);
+    return arr;
+}
+
+int main() {
+    vector<int> tamaños = {10000, 50000, 100000, 200000};
+
+    for (int n : tamaños) {
+        vector<int> arr = generarArreglo(n);
+
+        auto inicio = chrono::high_resolution_clock::now();
+        parallelMergesort(arr, 0, arr.size() - 1);
+        auto fin = chrono::high_resolution_clock::now();
+
+        chrono::duration<double> duracion = fin - inicio;
+        cout << "Tamaño: " << n
+             << " elementos | Tiempo de ejecución: " << duracion.count() << " segundos\n";
+    }
+
+    return 0;
+}
+
+
+g++ forkjoin_merge.cpp -o merge
+
+./merge
