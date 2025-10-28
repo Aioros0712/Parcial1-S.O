@@ -1,0 +1,143 @@
+nano sudoku.cpp
+
+#include <iostream>
+#include <pthread.h>
+#include <iomanip>
+using namespace std;
+
+#define N 9
+
+struct Parameters {
+    int row;
+    int col;
+};
+
+int sudokuValido[N][N] = {
+    {5,3,4,6,7,8,9,1,2},
+    {6,7,2,1,9,5,3,4,8},
+    {1,9,8,3,4,2,5,6,7},
+    {8,5,9,7,6,1,4,2,3},
+    {4,2,6,8,5,3,7,9,1},
+    {7,1,3,9,2,4,8,5,6},
+    {9,6,1,5,3,7,2,8,4},
+    {2,8,7,4,1,9,6,3,5},
+    {3,4,5,2,8,6,1,7,9}
+};
+
+int sudokuInvalido[N][N] = {
+    {5,3,4,6,7,8,9,1,2},
+    {6,7,2,1,9,5,3,4,8},
+    {1,9,8,3,4,2,5,6,7},
+    {8,5,9,7,6,1,4,2,3},
+    {4,2,6,8,5,3,7,9,1},
+    {7,1,3,9,2,4,8,5,6},
+    {9,6,1,5,3,7,2,8,4},
+    {2,8,7,4,1,9,6,3,5},
+    {3,4,5,2,8,6,1,7,8} 
+};
+
+int validRows = 0;
+int validCols = 0;
+int validSubgrids = 0;
+int (*sudoku)[N];
+
+void imprimirSudoku(int grid[N][N]) {
+    cout << "\n-------------------------\n";
+    for (int i = 0; i < N; i++) {
+        cout << "| ";
+        for (int j = 0; j < N; j++) {
+            cout << grid[i][j] << " ";
+            if ((j + 1) % 3 == 0) cout << "| ";
+        }
+        cout << "\n";
+        if ((i + 1) % 3 == 0) cout << "-------------------------\n";
+    }
+    cout << endl;
+}
+
+void* checkRows(void*) {
+    for (int i = 0; i < N; i++) {
+        bool nums[10] = {false};
+        for (int j = 0; j < N; j++) {
+            int val = sudoku[i][j];
+            if (val < 1 || val > 9 || nums[val]) pthread_exit(nullptr);
+            nums[val] = true;
+        }
+    }
+    validRows = 1;
+    pthread_exit(nullptr);
+}
+
+void* checkCols(void*) {
+    for (int j = 0; j < N; j++) {
+        bool nums[10] = {false};
+        for (int i = 0; i < N; i++) {
+            int val = sudoku[i][j];
+            if (val < 1 || val > 9 || nums[val]) pthread_exit(nullptr);
+            nums[val] = true;
+        }
+    }
+    validCols = 1;
+    pthread_exit(nullptr);
+}
+
+void* checkSubgrid(void* param) {
+    Parameters* data = (Parameters*)param;
+    int row = data->row;
+    int col = data->col;
+    bool nums[10] = {false};
+    for (int i = row; i < row + 3; i++) {
+        for (int j = col; j < col + 3; j++) {
+            int val = sudoku[i][j];
+            if (val < 1 || val > 9 || nums[val]) pthread_exit(nullptr);
+            nums[val] = true;
+        }
+    }
+    __sync_fetch_and_add(&validSubgrids, 1);
+    pthread_exit(nullptr);
+}
+
+int main() {
+    cout << "Seleccione el Sudoku a validar:\n";
+    cout << "1. Sudoku válido\n";
+    cout << "2. Sudoku inválido\n> ";
+
+    int opcion;
+    cin >> opcion;
+
+    sudoku = (opcion == 1) ? sudokuValido : sudokuInvalido;
+
+    cout << "\nSudoku seleccionado:\n";
+    imprimirSudoku(sudoku);
+
+    pthread_t rowThread, colThread, subgridThreads[9];
+    Parameters params[9];
+    int idx = 0;
+
+    for (int i = 0; i < N; i += 3)
+        for (int j = 0; j < N; j += 3) {
+            params[idx].row = i;
+            params[idx].col = j;
+            pthread_create(&subgridThreads[idx], nullptr, checkSubgrid, &params[idx]);
+            idx++;
+        }
+
+    pthread_create(&rowThread, nullptr, checkRows, nullptr);
+    pthread_create(&colThread, nullptr, checkCols, nullptr);
+
+    pthread_join(rowThread, nullptr);
+    pthread_join(colThread, nullptr);
+    for (int i = 0; i < 9; i++) pthread_join(subgridThreads[i], nullptr);
+
+    cout << "\nResultado: ";
+    if (validRows && validCols && validSubgrids == 9)
+        cout << " Sudoku VÁLIDO\n";
+    else
+        cout << " Sudoku INVÁLIDO\n";
+
+    return 0;
+}
+
+g++ sudoku.cpp -pthread -o sudoku
+
+./sudoku
